@@ -2,7 +2,7 @@ import React from 'react';
 import { Layout } from 'antd';
 import PageHeader from './components/PageHeader/PageHeader';
 import PageFooter from './components/PageFooter/PageFooter';
-import College from './components/College/College';
+import AppRouter from './AppRouter';
 
 const { Content } = Layout;
 
@@ -12,7 +12,7 @@ function App() {
       <PageHeader />
       <Content style={{ padding: '0 50px' }}>
         <div style={{ background: '#fff', padding: 24, minHeight: 280 }}>
-          <College />
+          <AppRouter />
         </div>
       </Content>
       <PageFooter />
