@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import './College.css';
+import './HighSchool.css';
 import {
   Form,
   Input,
@@ -20,7 +20,7 @@ const { Option } = Select;
 
 let id = 0;
 
-class College extends Component {
+class HighSchool extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -343,6 +343,8 @@ class College extends Component {
   }
 }
 
-const CollegeForm = Form.create({ name: 'college_calculator_form' })(College);
+const HighSchoolForm = Form.create({ name: 'high_school_calculator_form' })(
+  HighSchool
+);
 
-export default Form.create()(CollegeForm);
+export default Form.create()(HighSchoolForm);

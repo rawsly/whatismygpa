@@ -1,4 +1,5 @@
 import React from 'react';
+import * as ROUTES from '../routes';
 
 export const LETTER_GRADES = [
   { letter: 'A', grade: 4.0 },
@@ -178,7 +179,7 @@ export const COLLEGE_EXAMPLE_DATA = [
 ];
 
 export const OTHER_CALCULATORS = [
-  <a href="#">College GPA Calculator</a>,
-  <a href="#">High School GPA Calculator</a>,
-  <a href="#">Grade Calculator</a>
+  <a href={ROUTES.COLLEGE_GPA_CALCULATOR}>College GPA Calculator</a>,
+  <a href={ROUTES.HIGH_SCHOOL_GPA_CALCULATOR}>High School GPA Calculator</a>,
+  <a href={ROUTES.GRADE_CALCULATOR}>Grade Calculator</a>
 ];
