@@ -10,7 +10,9 @@ import {
   Col,
   Modal,
   Table,
-  List
+  List,
+  Alert,
+  Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
@@ -25,7 +27,7 @@ class HighSchool extends Component {
     super(props);
     this.state = {
       classes: [],
-      gpa: 0,
+      gpas: [],
       visible: null,
       modalClass: '',
       modalTitle: ''
@@ -64,7 +66,8 @@ class HighSchool extends Component {
       courseName: '',
       letter: '',
       grade: 0,
-      credit: 0
+      credit: 0,
+      courseType: 'regular'
     };
 
     this.setState(prevState => ({
@@ -75,36 +78,54 @@ class HighSchool extends Component {
   handleSubmit = e => {
     e.preventDefault();
     const { classes } = this.state;
-
     if (classes.length === 0) {
       return;
     }
 
     this.props.form.validateFields((err, values) => {
       if (!err) {
-        const { courseNames, credits, letterGrades, keys } = values;
-        const gpa = this.calculateGPA(credits, letterGrades);
-        this.setState({ gpa }, this.showGPAModal(gpa));
+        const {
+          courseNames,
+          credits,
+          letterGrades,
+          courseTypes,
+          keys
+        } = values;
+        const gpas = this.calculateGPA(credits, letterGrades, courseTypes);
+        this.setState({ gpas }, this.showGPAModal(gpas));
       } else {
         console.log(err);
       }
     });
   };
 
-  calculateGPA = (credits, letterGrades) => {
-    let cumulativeGPA = 0;
+  calculateGPA = (credits, letterGrades, courseTypes) => {
+    let weightedGPA = 0;
+    let unweightedGPA = 0;
     let cumulativeCredits = 0;
     for (let i = 0; i < credits.length; i++) {
       if (!isNaN(credits[i]) && !isNaN(letterGrades[i])) {
-        console.log(credits[i], letterGrades[i]);
-        cumulativeGPA += credits[i] * letterGrades[i];
+        unweightedGPA += credits[i] * letterGrades[i];
         cumulativeCredits += credits[i];
+        // regular
+        if (courseTypes[i] === CONSTANTS.COURSE_TYPES[0]) {
+          weightedGPA += credits[i] * letterGrades[i];
+          // honors
+        } else if (courseTypes[i] === CONSTANTS.COURSE_TYPES[4]) {
+          weightedGPA += credits[i] * (letterGrades[i] + 0.5);
+        } else {
+          weightedGPA += credits[i] * (letterGrades[i] + 1);
+        }
       }
     }
 
-    let gpa = cumulativeGPA / cumulativeCredits;
-    console.log('GPA: ', gpa);
-    return gpa.toFixed(CONSTANTS.DECIMAL_LENGTH);
+    let unweighted = unweightedGPA / cumulativeCredits;
+    let weighted = weightedGPA / cumulativeCredits;
+    let gpas = [
+      unweighted.toFixed(CONSTANTS.DECIMAL_LENGTH),
+      weighted.toFixed(CONSTANTS.DECIMAL_LENGTH)
+    ];
+    return gpas;
   };
 
   handleClose = () => {
@@ -115,17 +136,17 @@ class HighSchool extends Component {
     console.log('Saved!');
   };
 
-  showGPAModal = gpa => {
+  showGPAModal = gpas => {
     this.setState({ visible: true });
 
-    if (gpa < 2) {
+    if (gpas[0] < 2) {
       this.setState({
         modalClass: CONSTANTS.NOT_GOOD,
         modalTitle: 'You can do better!'
       });
-    } else if (gpa >= 2 && gpa < 3) {
+    } else if (gpas[0] >= 2 && gpas[0] < 3) {
       this.setState({ modalClass: CONSTANTS.NICE, modalTitle: 'Nice!' });
-    } else if (gpa >= 3 && gpa < 3.5) {
+    } else if (gpas[0] >= 3 && gpas[0] < 3.5) {
       this.setState({
         modalClass: CONSTANTS.GOOD,
         modalTitle: 'Keep doing this!'
@@ -136,7 +157,7 @@ class HighSchool extends Component {
   };
 
   render() {
-    const { gpa, visible, classes, modalClass, modalTitle } = this.state;
+    const { gpas, visible, classes, modalClass, modalTitle, type } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -144,7 +165,7 @@ class HighSchool extends Component {
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
         <Row gutter={16}>
-          <Col span={9}>
+          <Col span={6}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`courseNames[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -157,7 +178,7 @@ class HighSchool extends Component {
               })(<Input placeholder="Course Name" />)}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={5}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`letterGrades[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -169,16 +190,21 @@ class HighSchool extends Component {
                 ]
               })(
                 <Select placeholder="Letter Grade">
-                  {CONSTANTS.LETTER_GRADES.map((letterGrade, index) => (
-                    <Option key={letterGrade.letter} value={letterGrade.grade}>
-                      {`${letterGrade.letter} (${letterGrade.grade})`}
-                    </Option>
-                  ))}
+                  {CONSTANTS.HIGH_SCHOOL_LETTER_GRADES.map(
+                    (letterGrade, index) => (
+                      <Option
+                        key={letterGrade.letter}
+                        value={letterGrade.regularGrade}
+                      >
+                        {`${letterGrade.letter}`}
+                      </Option>
+                    )
+                  )}
                 </Select>
               )}
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={5}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`credits[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -190,7 +216,7 @@ class HighSchool extends Component {
                 ]
               })(
                 <Select placeholder="Credits">
-                  {CONSTANTS.CREDITS.map((credit, index) => (
+                  {CONSTANTS.HIGH_SCHOOL_CREDITS.map((credit, index) => (
                     <Option key={credit} value={credit}>
                       {credit}
                     </Option>
@@ -199,19 +225,43 @@ class HighSchool extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={1}>
-            <Icon
-              className="dynamic-delete-button"
-              type="minus-circle-o"
+          <Col span={6}>
+            <Form.Item required={true} key={k}>
+              {getFieldDecorator(`courseTypes[${k}]`, {
+                validateTrigger: ['onChange', 'onBlur'],
+                rules: [
+                  {
+                    required: true,
+                    message: 'Course type must be provided.'
+                  }
+                ]
+              })(
+                <Select placeholder="Course Type">
+                  {CONSTANTS.COURSE_TYPES.map((courseType, index) => (
+                    <Option key={courseType} value={courseType}>
+                      {courseType}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+          </Col>
+          <Col span={2}>
+            <Button
+              type="danger"
               onClick={() => this.remove(k)}
-            />
+              className="remove-button"
+              ghost
+            >
+              <Icon type="delete" />
+            </Button>
           </Col>
         </Row>
       </div>
     ));
     return (
       <div>
-        <Title>College GPA Calculator</Title>
+        <Title>High School GPA Calculator</Title>
         <p>
           Want to calculate your college course grades? Our easy to use college
           GPA calculator will help you calculate your GPA and stay on top of
@@ -231,7 +281,7 @@ class HighSchool extends Component {
                     onClick={this.add}
                     style={{ width: '100%' }}
                   >
-                    <Icon type="plus" /> Add New Class
+                    <Icon type="plus" /> Add New Course
                   </Button>
                 </Form.Item>
                 <Form.Item>
@@ -240,54 +290,21 @@ class HighSchool extends Component {
                     htmlType="submit"
                     disabled={classes.length === 0}
                   >
-                    Calculate
+                    Calculate GPA
                   </Button>
                 </Form.Item>
               </Form>
 
-              <Title>How does it work?</Title>
+              <Title>Weighted vs Unweighted GPA</Title>
               <p>
-                <ul>
-                  <li>
-                    Click on <strong>"Add New Class"</strong> button to add a
-                    new class.
-                  </li>
-                  <li>
-                    Write your class name. This is{' '}
-                    <strong>not required.</strong>
-                  </li>
-                  <li>
-                    Select your letter grade. This is <strong>required.</strong>
-                  </li>
-                  <li>
-                    Select your class credits. This is also{' '}
-                    <strong>required.</strong>
-                  </li>
-                  <li>
-                    If you are done, click on <strong>"Calculate"</strong>{' '}
-                    button.
-                  </li>
-                </ul>
+                <strong>Unweighted GPA</strong> - All courses are graded on the
+                same scale which means class difficulty does not matter.
               </p>
-              <Title>What is the formula?</Title>
-              <p>The formula is actually pretty straight forward.</p>
+              <p>Therefore, the formula is very simple.</p>
               <p>
-                First, you multiply your credits with corresponding grade point.
-                (You can see grade points from the table.)
+                <strong>Σ (grade value * credits) / Σ credits</strong>
               </p>
-              <p>
-                For example, your grade letter is <strong>"A"</strong> and class
-                credits is <strong>6</strong>. You have to multiply{' '}
-                <strong>6</strong> by <strong>4.00</strong> which is{' '}
-                <strong>24</strong>.
-              </p>
-              <p>Do this calculation for every class.</p>
-              <p>Sum them up.</p>
-              <p>Sum your credits.</p>
-              <p>Divide first sum with sum of your credits.</p>
-              <p>
-                <strong>Example:</strong>
-              </p>
+              <p>Simple example:</p>
               <Table
                 columns={CONSTANTS.COLLEGE_EXAMPLE_COLUMNS}
                 dataSource={CONSTANTS.COLLEGE_EXAMPLE_DATA}
@@ -299,13 +316,52 @@ class HighSchool extends Component {
                 Now, your GPA is going to be <strong>73.60 / 23</strong> which
                 is <strong>3.20</strong>.
               </p>
+              <Divider />
+              <p>
+                <strong>Weighted GPA</strong> - Unlike unweighted GPA, now,
+                difficulty of the course matters. There are 5 class types.
+              </p>
+              <ul>
+                <li>
+                  <strong>AP Courses </strong>(Advanced Placement Courses),
+                  usually give you additional 1 point to your standard GPA
+                  score.
+                </li>
+                <li>
+                  <strong>IB Courses </strong>(International Baccalaureate
+                  Courses) are also rewarded with extra 1 point.
+                </li>
+                <li>
+                  <strong>College Prep</strong> classes can also add 1 point to
+                  your grade.
+                </li>
+                <li>
+                  <strong>Honor Courses</strong> most often give you additional
+                  0.5 point (although you can find schools where it's awarded 1
+                  point, check it first in your school's rules).
+                </li>
+              </ul>
+              <Table
+                columns={CONSTANTS.HIGH_SCHOOL_TABLE_COLUMNS}
+                dataSource={CONSTANTS.HIGH_SCHOOL_LETTER_GRADES}
+                pagination={false}
+                size="small"
+              />
             </Col>
             <Col span={9}>
               <Table
-                columns={CONSTANTS.COLLEGE_COLUMNS}
-                dataSource={CONSTANTS.COLLEGE_DATA}
+                columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
+                dataSource={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
                 pagination={false}
               />
+
+              <Alert
+                message="Note that percentage interval and GPA scale may differ a bit between schools."
+                type="warning"
+                showIcon
+                style={{ marginTop: 20 }}
+              />
+
               <List
                 style={{ marginTop: 50 }}
                 header={
@@ -336,7 +392,7 @@ class HighSchool extends Component {
             </Button>
           ]}
         >
-          {gpa}
+          {gpas[0]} - {gpas[1]}
         </Modal>
       </div>
     );

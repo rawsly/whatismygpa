@@ -1,17 +1,5 @@
-.dynamic-delete-button {
-  cursor: pointer;
-  position: relative;
-  top: 6px;
-  font-size: 24px;
-  color: #999;
-  transition: all 0.3s;
-}
-.dynamic-delete-button:hover {
-  color: #777;
-}
-.dynamic-delete-button[disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
+.remove-button {
+  margin-top: 4px;
 }
 
 .college-wrapper {
@@ -27,17 +15,13 @@
 }
 
 .success {
-  
 }
 
 .good {
-
 }
 
 .nice {
-
 }
 
 .notGood {
-
 }
