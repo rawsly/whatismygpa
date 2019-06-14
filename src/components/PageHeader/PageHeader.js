@@ -14,7 +14,9 @@ class PageHeader extends Component {
   render() {
     return (
       <Header>
-        <div className="logo">whatIsMyGPA</div>
+        <div className="logo">
+          <a href={ROUTES.HOME}>whatIsMyGPA</a>
+        </div>
         <Menu
           theme="dark"
           mode="horizontal"

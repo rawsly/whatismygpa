@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import './College.css';
+import './Grade.css';
 import {
   Form,
   Input,
@@ -10,7 +10,9 @@ import {
   Col,
   Modal,
   Table,
-  List
+  List,
+  Alert,
+  Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
@@ -20,12 +22,12 @@ const { Option } = Select;
 
 let id = 0;
 
-class College extends Component {
+class Grade extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      classes: [],
-      gpa: 0,
+      courses: [],
+      grade: null,
       visible: null,
       modalClass: '',
       modalTitle: ''
@@ -33,7 +35,7 @@ class College extends Component {
   }
 
   remove = k => {
-    const { classes } = this.state;
+    const { courses } = this.state;
     const { form } = this.props;
     const keys = form.getFieldValue('keys');
     // We need at least one field to calculate
@@ -43,8 +45,8 @@ class College extends Component {
     });
 
     this.setState({
-      classes: classes.filter(currentClass => {
-        return currentClass.id !== k;
+      courses: courses.filter(currentCourse => {
+        return currentCourse.id !== k;
       })
     });
   };
@@ -59,52 +61,52 @@ class College extends Component {
       keys: nextKeys
     });
 
-    const newClass = {
+    const newCourse = {
       id,
       courseName: '',
-      letter: '',
+      assessment: '',
+      point: 0,
       grade: 0,
-      credit: 0
+      weight: 0
     };
 
     this.setState(prevState => ({
-      classes: [...prevState.classes, newClass]
+      courses: [...prevState.courses, newCourse]
     }));
   };
 
   handleSubmit = e => {
     e.preventDefault();
-    const { classes } = this.state;
-
-    if (classes.length === 0) {
+    const { courses } = this.state;
+    if (courses.length === 0) {
       return;
     }
 
     this.props.form.validateFields((err, values) => {
       if (!err) {
-        const { courseNames, credits, letterGrades, keys } = values;
-        const gpa = this.calculateGPA(credits, letterGrades);
-        this.setState({ gpa }, this.showGPAModal(gpa));
+        const { courseName, assessments, points, weights, keys } = values;
+        const grade = this.calculateGPA(points, weights);
+        this.setState({ grade }, this.showGPAModal(grade));
       } else {
         console.log(err);
       }
     });
   };
 
-  calculateGPA = (credits, letterGrades) => {
-    let cumulativeGPA = 0;
-    let cumulativeCredits = 0;
-    for (let i = 0; i < credits.length; i++) {
-      if (!isNaN(credits[i]) && !isNaN(letterGrades[i])) {
-        console.log(credits[i], letterGrades[i]);
-        cumulativeGPA += credits[i] * letterGrades[i];
-        cumulativeCredits += credits[i];
+  calculateGPA = (points, weights) => {
+    let grade = 0;
+    let cumulativeWeight = 0;
+    for (let i = 0; i < points.length; i++) {
+      if (!isNaN(points[i]) && !isNaN(weights[i])) {
+        console.log(weights[i], points[i]);
+        grade += weights[i] * points[i];
+        cumulativeWeight += weights[i];
       }
     }
 
-    let gpa = cumulativeGPA / cumulativeCredits;
-    console.log('GPA: ', gpa);
-    return gpa.toFixed(CONSTANTS.DECIMAL_LENGTH);
+    console.log(grade);
+    grade /= cumulativeWeight;
+    return grade;
   };
 
   handleClose = () => {
@@ -115,28 +117,17 @@ class College extends Component {
     console.log('Saved!');
   };
 
-  showGPAModal = gpa => {
+  showGPAModal = grade => {
     this.setState({ visible: true });
 
-    if (gpa < 2) {
-      this.setState({
-        modalClass: CONSTANTS.NOT_GOOD,
-        modalTitle: 'You can do better!'
-      });
-    } else if (gpa >= 2 && gpa < 3) {
-      this.setState({ modalClass: CONSTANTS.NICE, modalTitle: 'Nice!' });
-    } else if (gpa >= 3 && gpa < 3.5) {
-      this.setState({
-        modalClass: CONSTANTS.GOOD,
-        modalTitle: 'Keep doing this!'
-      });
-    } else {
-      this.setState({ modalClass: CONSTANTS.SUCCESS, modalTitle: 'Amazing!' });
-    }
+    this.setState({
+      modalClass: CONSTANTS.GOOD,
+      modalTitle: 'Keep doing this!'
+    });
   };
 
   render() {
-    const { gpa, visible, classes, modalClass, modalTitle } = this.state;
+    const { grade, visible, courses, modalClass, modalTitle } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -146,7 +137,7 @@ class College extends Component {
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item required={false} key={k}>
-              {getFieldDecorator(`courseNames[${k}]`, {
+              {getFieldDecorator(`assessments[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
                 rules: [
                   {
@@ -154,12 +145,12 @@ class College extends Component {
                     whitespace: true
                   }
                 ]
-              })(<Input placeholder="Course Name" />)}
+              })(<Input placeholder="Assessment (e.g. Quiz)" />)}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={7}>
             <Form.Item required={true} key={k}>
-              {getFieldDecorator(`letterGrades[${k}]`, {
+              {getFieldDecorator(`points[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
                 rules: [
                   {
@@ -168,31 +159,31 @@ class College extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Letter Grade">
-                  {CONSTANTS.LETTER_GRADES.map((letterGrade, index) => (
-                    <Option key={letterGrade.letter} value={letterGrade.grade}>
-                      {`${letterGrade.letter} (${letterGrade.grade})`}
+                <Select placeholder="Point">
+                  {CONSTANTS.GRADE_WEIGHTS.map((point, index) => (
+                    <Option key={point} value={point}>
+                      {point}
                     </Option>
                   ))}
                 </Select>
               )}
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={7}>
             <Form.Item required={true} key={k}>
-              {getFieldDecorator(`credits[${k}]`, {
+              {getFieldDecorator(`weights[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
                 rules: [
                   {
                     required: true,
-                    message: 'Credit must be provided.'
+                    message: 'Weight must be provided.'
                   }
                 ]
               })(
-                <Select placeholder="Credits">
-                  {CONSTANTS.CREDITS.map((credit, index) => (
-                    <Option key={credit} value={credit}>
-                      {credit}
+                <Select placeholder="Weight (%)">
+                  {CONSTANTS.GRADE_WEIGHTS.map((weight, index) => (
+                    <Option key={weight} value={weight}>
+                      {weight}
                     </Option>
                   ))}
                 </Select>
@@ -214,7 +205,7 @@ class College extends Component {
     ));
     return (
       <div>
-        <Title>College GPA Calculator</Title>
+        <Title>Grade Calculator</Title>
         <p>
           Want to calculate your college course grades? Our easy to use college
           GPA calculator will help you calculate your GPA and stay on top of
@@ -234,81 +225,46 @@ class College extends Component {
                     onClick={this.add}
                     style={{ width: '100%' }}
                   >
-                    <Icon type="plus" /> Add New Course
+                    <Icon type="plus" /> Add New Assessment
                   </Button>
                 </Form.Item>
                 <Form.Item>
                   <Button
                     type="primary"
                     htmlType="submit"
-                    disabled={classes.length === 0}
+                    disabled={courses.length === 0}
                   >
-                    Calculate
+                    Calculate GPA
                   </Button>
                 </Form.Item>
               </Form>
 
-              <Title>How does it work?</Title>
-              <p>
-                <ul>
-                  <li>
-                    Click on <strong>"Add New Class"</strong> button to add a
-                    new class.
-                  </li>
-                  <li>
-                    Write your class name. This is{' '}
-                    <strong>not required.</strong>
-                  </li>
-                  <li>
-                    Select your letter grade. This is <strong>required.</strong>
-                  </li>
-                  <li>
-                    Select your class credits. This is also{' '}
-                    <strong>required.</strong>
-                  </li>
-                  <li>
-                    If you are done, click on <strong>"Calculate"</strong>{' '}
-                    button.
-                  </li>
-                </ul>
-              </p>
               <Title>What is the formula?</Title>
-              <p>The formula is actually pretty straight forward.</p>
               <p>
-                First, you multiply your credits with corresponding grade point.
-                (You can see grade points from the table.)
+                <strong>Σ (point * weight) / Σ weight</strong>
               </p>
-              <p>
-                For example, your grade letter is <strong>"A"</strong> and class
-                credits is <strong>6</strong>. You have to multiply{' '}
-                <strong>6</strong> by <strong>4.00</strong> which is{' '}
-                <strong>24</strong>.
-              </p>
-              <p>Do this calculation for every class.</p>
-              <p>Sum them up.</p>
-              <p>Sum your credits.</p>
-              <p>Divide first sum with sum of your credits.</p>
-              <p>
-                <strong>Example:</strong>
-              </p>
+              <p>Simple example:</p>
               <Table
-                columns={CONSTANTS.COLLEGE_EXAMPLE_COLUMNS}
-                dataSource={CONSTANTS.COLLEGE_EXAMPLE_DATA}
+                columns={CONSTANTS.GRADE_COLUMNS}
+                dataSource={CONSTANTS.GRADE_DATA}
                 pagination={false}
                 size="small"
               />
-              <br />
-              <p>
-                Now, your GPA is going to be <strong>73.60 / 23</strong> which
-                is <strong>3.20</strong>.
-              </p>
             </Col>
             <Col span={9}>
               <Table
-                columns={CONSTANTS.COLLEGE_COLUMNS}
-                dataSource={CONSTANTS.COLLEGE_DATA}
+                columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
+                dataSource={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
                 pagination={false}
               />
+
+              <Alert
+                message="Note that percentage interval and GPA scale may differ a bit between schools."
+                type="warning"
+                showIcon
+                style={{ marginTop: 20 }}
+              />
+
               <List
                 style={{ marginTop: 50 }}
                 header={
@@ -339,13 +295,13 @@ class College extends Component {
             </Button>
           ]}
         >
-          {gpa}
+          {grade}
         </Modal>
       </div>
     );
   }
 }
 
-const CollegeForm = Form.create({ name: 'college_calculator_form' })(College);
+const GradeForm = Form.create({ name: 'grade_calculator_form' })(Grade);
 
-export default Form.create()(CollegeForm);
+export default Form.create()(GradeForm);
