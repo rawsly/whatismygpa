@@ -17,6 +17,7 @@ import {
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
+import OtherLinks from '../OtherLinks/OtherLinks';
 
 const { Option } = Select;
 
@@ -349,30 +350,7 @@ class HighSchool extends Component {
               />
             </Col>
             <Col span={9}>
-              <Table
-                columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
-                dataSource={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
-                pagination={false}
-              />
-
-              <Alert
-                message="Note that percentage interval and GPA scale may differ a bit between schools."
-                type="warning"
-                showIcon
-                style={{ marginTop: 20 }}
-              />
-
-              <List
-                style={{ marginTop: 50 }}
-                header={
-                  <div>
-                    <strong>Other Calculators</strong>
-                  </div>
-                }
-                bordered
-                dataSource={CONSTANTS.OTHER_CALCULATORS}
-                renderItem={item => <List.Item>{item}</List.Item>}
-              />
+              <OtherLinks tableColumns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS} tableData={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA} />
             </Col>
           </Row>
         </div>
