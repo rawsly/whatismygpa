@@ -32,6 +32,7 @@ class Grade extends Component {
   }
 
   remove = k => {
+    const { courses } = this.state;
     const { form } = this.props;
     const keys = form.getFieldValue('keys');
     // We need at least one field to calculate
@@ -39,6 +40,10 @@ class Grade extends Component {
     form.setFieldsValue({
       keys: keys.filter(key => key !== k)
     });
+
+    this.setState(prevState => ({
+      courses: courses.filter(course => course.id !== k)
+    }));
   };
 
   add = () => {
@@ -449,7 +454,53 @@ class Grade extends Component {
                 pagination={false}
                 size="small"
               />
+
+              <Title style={{ marginTop: 30 }}>
+                How to calculate required final?
+              </Title>
+              <p>
+                To explain it better, we are going to use an example which
+                current grade will be <i>88%</i>, desired grade will be{' '}
+                <i>90%</i> and weight of final exam will be <i>30%.</i>
+              </p>
+              <ul>
+                <li>
+                  You first need 3 numbers:{' '}
+                  <strong>
+                    Current Grade, Desired Grade, Weight of Final Exam
+                  </strong>
+                </li>
+                <li>
+                  We have to determine weight of current grade by subtracting
+                  final exam from 100%. In this case, we will{' '}
+                  <strong>subtract 100 with 30</strong>, since our final exam's
+                  weight is 30%.
+                </li>
+                <li>
+                  Multiply current grade with weight of current grade which you
+                  calculated at previous step. In this case we will{' '}
+                  <strong>multiply 88 by 0.7 (70%)</strong>. You will find{' '}
+                  <strong>61.6</strong>.
+                </li>
+                <li>
+                  Subtract this number from desired grade. In this case, we will{' '}
+                  <strong>subtract 90 by 61.6</strong> which we calculated at
+                  previous step. You will find <strong>28.4</strong>.
+                </li>
+                <li>
+                  At last step, divide this number by weight of final exam. In
+                  this case we will{' '}
+                  <strong>
+                    divide 28.4 by 30 which will return 0.94666 which is
+                    approximately 0.947
+                  </strong>
+                  . Now, multiply it by 100 and you will get{' '}
+                  <strong>94.7</strong>.
+                </li>
+              </ul>
             </Col>
+
+            {/* Sidebar */}
             <Col span={9}>
               <Table
                 columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
