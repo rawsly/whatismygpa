@@ -10,11 +10,13 @@ import {
   Col,
   Modal,
   Table,
-  List
+  List,
+  Avatar
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
+import OtherLinks from '../OtherLinks/OtherLinks';
 
 const { Option } = Select;
 
@@ -27,8 +29,8 @@ class College extends Component {
       classes: [],
       gpa: 0,
       visible: null,
-      modalClass: '',
-      modalTitle: ''
+      modalColor: '',
+      modalMessage: ''
     };
   }
 
@@ -84,6 +86,7 @@ class College extends Component {
       if (!err) {
         const { courseNames, credits, letterGrades, keys } = values;
         const gpa = this.calculateGPA(credits, letterGrades);
+        this.setMessageAndColor(gpa);
         this.setState({ gpa }, this.showGPAModal(gpa));
       } else {
         console.log(err);
@@ -115,28 +118,43 @@ class College extends Component {
     console.log('Saved!');
   };
 
-  showGPAModal = gpa => {
-    this.setState({ visible: true });
-
+  setMessageAndColor = gpa => {
     if (gpa < 2) {
       this.setState({
-        modalClass: CONSTANTS.NOT_GOOD,
-        modalTitle: 'You can do better!'
+        modalColor: CONSTANTS.COLORS.notGood,
+        modalMessage: CONSTANTS.MESSAGES.notGood
       });
     } else if (gpa >= 2 && gpa < 3) {
-      this.setState({ modalClass: CONSTANTS.NICE, modalTitle: 'Nice!' });
+      this.setState({
+        modalColor: CONSTANTS.COLORS.nice,
+        modalMessage: CONSTANTS.MESSAGES.nice
+      });
     } else if (gpa >= 3 && gpa < 3.5) {
       this.setState({
-        modalClass: CONSTANTS.GOOD,
-        modalTitle: 'Keep doing this!'
+        modalColor: CONSTANTS.COLORS.good,
+        modalMessage: CONSTANTS.MESSAGES.good
       });
     } else {
-      this.setState({ modalClass: CONSTANTS.SUCCESS, modalTitle: 'Amazing!' });
+      this.setState({
+        modalColor: CONSTANTS.COLORS.success,
+        modalMessage: CONSTANTS.MESSAGES.success
+      });
     }
   };
 
+  showGPAModal = gpa => {
+    this.setState({ visible: true });
+  };
+
   render() {
-    const { gpa, visible, classes, modalClass, modalTitle } = this.state;
+    const {
+      gpa,
+      visible,
+      classes,
+      modalClass,
+      modalMessage,
+      modalColor
+    } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -171,7 +189,7 @@ class College extends Component {
                 <Select placeholder="Letter Grade">
                   {CONSTANTS.LETTER_GRADES.map((letterGrade, index) => (
                     <Option key={letterGrade.letter} value={letterGrade.grade}>
-                      {`${letterGrade.letter} (${letterGrade.grade})`}
+                      {`${letterGrade.letter}`}
                     </Option>
                   ))}
                 </Select>
@@ -304,21 +322,9 @@ class College extends Component {
               </p>
             </Col>
             <Col span={9}>
-              <Table
-                columns={CONSTANTS.COLLEGE_COLUMNS}
-                dataSource={CONSTANTS.COLLEGE_DATA}
-                pagination={false}
-              />
-              <List
-                style={{ marginTop: 50 }}
-                header={
-                  <div>
-                    <strong>Other Calculators</strong>
-                  </div>
-                }
-                bordered
-                dataSource={CONSTANTS.OTHER_CALCULATORS}
-                renderItem={item => <List.Item>{item}</List.Item>}
+              <OtherLinks
+                tableColumns={CONSTANTS.COLLEGE_COLUMNS}
+                tableData={CONSTANTS.COLLEGE_DATA}
               />
             </Col>
           </Row>
@@ -327,7 +333,6 @@ class College extends Component {
         <Modal
           className={modalClass}
           visible={visible}
-          title={modalTitle}
           onOk={this.handleSave}
           onCancel={this.handleClose}
           footer={[
@@ -339,7 +344,18 @@ class College extends Component {
             </Button>
           ]}
         >
-          {gpa}
+          <p className="modalText" style={{ color: modalColor }}>
+            <strong>{modalMessage}</strong> <Icon type="smile" />
+          </p>
+          <p>
+            <Avatar
+              size="large"
+              className="modalGpa"
+              style={{ backgroundColor: modalColor }}
+            >
+              {gpa}
+            </Avatar>
+          </p>
         </Modal>
       </div>
     );
