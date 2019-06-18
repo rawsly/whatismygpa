@@ -1,5 +1,6 @@
 .remove-button {
   margin-top: 4px;
+  width: 100%;
 }
 
 .college-wrapper {
@@ -14,14 +15,20 @@
   font-size: 32px;
 }
 
-.success {
+.modalText {
+  text-align: center;
+  font-size: 24px;
+  font-family: 'Abel', sans-serif;
 }
 
-.good {
-}
-
-.nice {
-}
-
-.notGood {
+.modalGpa {
+  text-align: center;
+  width: 120px !important;
+  height: 120px !important;
+  line-height: 120px !important;
+  font-size: 32px !important;
+  font-family: 'Abel', sans-serif !important;
+  font-weight: 600 !important;
+  margin: 0 auto !important;
+  display: block !important;
 }

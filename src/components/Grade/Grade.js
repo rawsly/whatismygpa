@@ -8,15 +8,16 @@ import {
   Select,
   Row,
   Col,
-  Modal,
   Table,
   List,
   Alert,
+  message,
   Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
-import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
+import OtherLinks from '../OtherLinks/OtherLinks';
+import { isMobile } from 'react-device-detect';
 
 const { Option } = Select;
 
@@ -28,9 +29,8 @@ class Grade extends Component {
     this.state = {
       courses: [],
       grade: null,
-      visible: null,
-      modalClass: '',
-      modalTitle: ''
+      finalAssessment: {},
+      minimumGradeForFinal: null
     };
   }
 
@@ -44,11 +44,9 @@ class Grade extends Component {
       keys: keys.filter(key => key !== k)
     });
 
-    this.setState({
-      courses: courses.filter(currentCourse => {
-        return currentCourse.id !== k;
-      })
-    });
+    this.setState(prevState => ({
+      courses: courses.filter(course => course.id !== k)
+    }));
   };
 
   add = () => {
@@ -61,13 +59,12 @@ class Grade extends Component {
       keys: nextKeys
     });
 
+    const courseId = id - 1;
     const newCourse = {
-      id,
-      courseName: '',
-      assessment: '',
-      point: 0,
-      grade: 0,
-      weight: 0
+      id: courseId,
+      assessmentName: '',
+      assessmentPoint: null,
+      assessmentWeight: null
     };
 
     this.setState(prevState => ({
@@ -75,67 +72,171 @@ class Grade extends Component {
     }));
   };
 
-  handleSubmit = e => {
-    e.preventDefault();
-    const { courses } = this.state;
-    if (courses.length === 0) {
-      return;
-    }
+  handleAssessmentNameChange = (index, event) => {
+    const { value } = event.target;
 
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        const { courseName, assessments, points, weights, keys } = values;
-        const grade = this.calculateGPA(points, weights);
-        this.setState({ grade }, this.showGPAModal(grade));
-      } else {
-        console.log(err);
-      }
-    });
+    this.setState(prevState => ({
+      courses: prevState.courses.map(course =>
+        course.id === index
+          ? Object.assign(course, { assessmentName: value })
+          : course
+      )
+    }));
   };
 
-  calculateGPA = (points, weights) => {
+  handleAssessmentPointChange = (index, event) => {
+    this.setState(
+      prevState => ({
+        courses: prevState.courses.map(course =>
+          course.id === index
+            ? Object.assign(course, { assessmentPoint: event })
+            : course
+        )
+      }),
+      () => this.calculateGPA()
+    );
+  };
+
+  handleAssessmentWeightChange = (index, event) => {
+    this.setState(
+      prevState => ({
+        courses: prevState.courses.map(course =>
+          course.id === index
+            ? Object.assign(course, { assessmentWeight: event })
+            : course
+        )
+      }),
+      () => this.calculateGPA()
+    );
+  };
+
+  handleFinalChange = (type, event) => {
+    if (type === 'cg') {
+      this.setState(
+        prevState => ({
+          finalAssessment: { ...prevState.finalAssessment, currentGrade: event }
+        }),
+        () => this.calculateMinimumGradeForFinal()
+      );
+    } else if (type === 'fw') {
+      this.setState(
+        prevState => ({
+          finalAssessment: { ...prevState.finalAssessment, finalWeight: event }
+        }),
+        () => this.calculateMinimumGradeForFinal()
+      );
+    } else if (type === 'dg') {
+      this.setState(
+        prevState => ({
+          finalAssessment: { ...prevState.finalAssessment, desiredGrade: event }
+        }),
+        () => this.calculateMinimumGradeForFinal()
+      );
+    } else {
+      return;
+    }
+  };
+
+  calculateGPA = () => {
+    const { courses } = this.state;
+
     let grade = 0;
     let cumulativeWeight = 0;
-    for (let i = 0; i < points.length; i++) {
-      if (!isNaN(points[i]) && !isNaN(weights[i])) {
-        console.log(weights[i], points[i]);
-        grade += weights[i] * points[i];
-        cumulativeWeight += weights[i];
+
+    courses.map(course => {
+      if (course.assessmentPoint !== null && course.assessmentWeight !== null) {
+        grade += course.assessmentPoint * course.assessmentWeight;
+        cumulativeWeight += course.assessmentWeight;
       }
+
+      return course;
+    });
+
+    if (cumulativeWeight !== 0) {
+      grade /= cumulativeWeight;
     }
 
-    console.log(grade);
-    grade /= cumulativeWeight;
+    this.setState(prevState => ({
+      finalAssessment: { ...prevState.finalAssessment, currentGrade: grade },
+      grade: grade.toFixed(CONSTANTS.DECIMAL_LENGTH)
+    }));
+
     return grade;
   };
 
-  handleClose = () => {
-    this.setState({ visible: false });
+  calculateMinimumGradeForFinal = () => {
+    const { courses, finalAssessment } = this.state;
+    const { desiredGrade, finalWeight, currentGrade } = finalAssessment;
+
+    if (desiredGrade && finalWeight && currentGrade) {
+      let sumOfWeights = 0;
+      courses.map(course => {
+        sumOfWeights += course.assessmentWeight;
+        return course;
+      });
+
+      const totalWeight = finalWeight + sumOfWeights;
+
+      if (totalWeight !== 100) {
+        message.error('Total weight must be equal to 100.');
+        return;
+      }
+
+      let weightWithoutFinal = totalWeight - finalWeight;
+      let gradeWithWeight = currentGrade * (weightWithoutFinal / totalWeight);
+      let desiredWeight = desiredGrade - gradeWithWeight;
+      let minimumGrade = (desiredWeight / finalWeight) * totalWeight;
+
+      this.setState({
+        minimumGradeForFinal: minimumGrade.toFixed(CONSTANTS.DECIMAL_LENGTH)
+      });
+
+      return minimumGrade;
+    }
+
+    return 0;
   };
 
-  handleSave = () => {
-    console.log('Saved!');
+  renderMinimumGradeForFinal = minimumGradeForFinal => {
+    return (
+      <span className="gradeMessage">
+        <Icon type="highlight" /> Grade needed in final:{' '}
+        <strong>{minimumGradeForFinal}</strong>
+      </span>
+    );
   };
 
-  showGPAModal = grade => {
-    this.setState({ visible: true });
+  renderGradeMessage = grade => {
+    let gradeMessage = { message: null, type: null };
+    if (grade < 60) {
+      gradeMessage.type = 'error';
+    } else if (grade >= 60 && grade < 74) {
+      gradeMessage.type = 'warning';
+    } else if (grade >= 74 && grade < 87) {
+      gradeMessage.type = 'info';
+    } else {
+      gradeMessage.type = 'success';
+    }
 
-    this.setState({
-      modalClass: CONSTANTS.GOOD,
-      modalTitle: 'Keep doing this!'
-    });
+    gradeMessage.message = (
+      <span className="gradeMessage">
+        <Icon type="highlight" /> Your grade: <strong>{grade}</strong>
+      </span>
+    );
+    return gradeMessage;
   };
 
   render() {
-    const { grade, visible, courses, modalClass, modalTitle } = this.state;
+    const { grade, minimumGradeForFinal } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
 
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
+        {isMobile && <Divider />}
         <Row gutter={16}>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`assessments[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -145,10 +246,15 @@ class Grade extends Component {
                     whitespace: true
                   }
                 ]
-              })(<Input placeholder="Assessment (e.g. Quiz)" />)}
+              })(
+                <Input
+                  placeholder="Assessment (e.g. Quiz)"
+                  onChange={e => this.handleAssessmentNameChange(k, e)}
+                />
+              )}
             </Form.Item>
           </Col>
-          <Col span={7}>
+          <Col sm={24} md={7}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`points[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -159,7 +265,10 @@ class Grade extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Point">
+                <Select
+                  placeholder="Point"
+                  onChange={e => this.handleAssessmentPointChange(k, e)}
+                >
                   {CONSTANTS.GRADE_WEIGHTS.map((point, index) => (
                     <Option key={point} value={point}>
                       {point}
@@ -169,7 +278,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={7}>
+          <Col sm={24} md={7}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`weights[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -180,7 +289,10 @@ class Grade extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Weight (%)">
+                <Select
+                  placeholder="Weight (%)"
+                  onChange={e => this.handleAssessmentWeightChange(k, e)}
+                >
                   {CONSTANTS.GRADE_WEIGHTS.map((weight, index) => (
                     <Option key={weight} value={weight}>
                       {weight}
@@ -190,7 +302,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={2}>
+          <Col sm={24} md={2}>
             <Button
               type="danger"
               onClick={() => this.remove(k)}
@@ -203,6 +315,86 @@ class Grade extends Component {
         </Row>
       </div>
     ));
+
+    const finalFormItems = (
+      <div className="form-wrapper">
+        <Row gutter={16}>
+          <Col sm={24} md={8}>
+            <Form.Item required={true}>
+              {getFieldDecorator(`currentGrade`, {
+                initialValue: grade && Math.round(grade),
+                validateTrigger: ['onChange', 'onBlur'],
+                rules: [
+                  {
+                    required: true,
+                    message: 'Current grade must be provided.'
+                  }
+                ]
+              })(
+                <Select
+                  placeholder="Current Grade"
+                  onChange={e => this.handleFinalChange('cg', e)}
+                >
+                  {CONSTANTS.GRADE_WEIGHTS.map((point, index) => (
+                    <Option key={point} value={point}>
+                      {point}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+          </Col>
+          <Col sm={24} md={8}>
+            <Form.Item required={true}>
+              {getFieldDecorator(`finalWeight`, {
+                validateTrigger: ['onChange', 'onBlur'],
+                rules: [
+                  {
+                    required: true,
+                    message: 'Weight must be provided.'
+                  }
+                ]
+              })(
+                <Select
+                  placeholder="Weight of Final Exam (%)"
+                  onChange={e => this.handleFinalChange('fw', e)}
+                >
+                  {CONSTANTS.GRADE_WEIGHTS.map((weight, index) => (
+                    <Option key={weight} value={weight}>
+                      {weight}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+          </Col>
+          <Col sm={24} md={8}>
+            <Form.Item required={true}>
+              {getFieldDecorator(`desiredGrade`, {
+                validateTrigger: ['onChange', 'onBlur'],
+                rules: [
+                  {
+                    required: true,
+                    message: 'Desired grade must be provided.'
+                  }
+                ]
+              })(
+                <Select
+                  placeholder="Desired Grade (%)"
+                  onChange={e => this.handleFinalChange('dg', e)}
+                >
+                  {CONSTANTS.GRADE_WEIGHTS.map((weight, index) => (
+                    <Option key={weight} value={weight}>
+                      {weight}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            </Form.Item>
+          </Col>
+        </Row>
+      </div>
+    );
     return (
       <div>
         <Title>Grade Calculator</Title>
@@ -216,8 +408,8 @@ class Grade extends Component {
         </p>
         <div className="college-wrapper">
           <Row gutter={32}>
-            <Col span={15}>
-              <Form onSubmit={this.handleSubmit}>
+            <Col sm={24} md={15}>
+              <Form>
                 {formItems}
                 <Form.Item>
                   <Button
@@ -228,18 +420,34 @@ class Grade extends Component {
                     <Icon type="plus" /> Add New Assessment
                   </Button>
                 </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    disabled={courses.length === 0}
-                  >
-                    Calculate GPA
-                  </Button>
-                </Form.Item>
+                {grade && (
+                  <Alert
+                    message={this.renderGradeMessage(grade).message}
+                    type={this.renderGradeMessage(grade).type}
+                  />
+                )}
               </Form>
 
-              <Title>What is the formula?</Title>
+              {grade && (
+                <div style={{ marginTop: 30 }}>
+                  <Title>What do I need on my final?</Title>
+                  <p>
+                    You can calculate minimum final grade that you need to get
+                    your desired letter grade.
+                  </p>
+                  <Form onSubmit={this.handleFinal}>{finalFormItems}</Form>
+                  {minimumGradeForFinal && (
+                    <Alert
+                      message={this.renderMinimumGradeForFinal(
+                        minimumGradeForFinal
+                      )}
+                      type={minimumGradeForFinal > 100 ? 'error' : 'info'}
+                    />
+                  )}
+                </div>
+              )}
+
+              <Title style={{ marginTop: 30 }}>What is the formula?</Title>
               <p>
                 <strong>Σ (point * weight) / Σ weight</strong>
               </p>
@@ -250,53 +458,61 @@ class Grade extends Component {
                 pagination={false}
                 size="small"
               />
+
+              <Title style={{ marginTop: 30 }}>
+                How to calculate required final?
+              </Title>
+              <p>
+                To explain it better, we are going to use an example which
+                current grade will be <i>88%</i>, desired grade will be{' '}
+                <i>90%</i> and weight of final exam will be <i>30%.</i>
+              </p>
+              <ul>
+                <li>
+                  You first need 3 numbers:{' '}
+                  <strong>
+                    Current Grade, Desired Grade, Weight of Final Exam
+                  </strong>
+                </li>
+                <li>
+                  We have to determine weight of current grade by subtracting
+                  final exam from 100%. In this case, we will{' '}
+                  <strong>subtract 100 with 30</strong>, since our final exam's
+                  weight is 30%.
+                </li>
+                <li>
+                  Multiply current grade with weight of current grade which you
+                  calculated at previous step. In this case we will{' '}
+                  <strong>multiply 88 by 0.7 (70%)</strong>. You will find{' '}
+                  <strong>61.6</strong>.
+                </li>
+                <li>
+                  Subtract this number from desired grade. In this case, we will{' '}
+                  <strong>subtract 90 by 61.6</strong> which we calculated at
+                  previous step. You will find <strong>28.4</strong>.
+                </li>
+                <li>
+                  At last step, divide this number by weight of final exam. In
+                  this case we will{' '}
+                  <strong>
+                    divide 28.4 by 30 which will return 0.94666 which is
+                    approximately 0.947
+                  </strong>
+                  . Now, multiply it by 100 and you will get{' '}
+                  <strong>94.7</strong>.
+                </li>
+              </ul>
             </Col>
-            <Col span={9}>
-              <Table
-                columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
-                dataSource={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
-                pagination={false}
-              />
 
-              <Alert
-                message="Note that percentage interval and GPA scale may differ a bit between schools."
-                type="warning"
-                showIcon
-                style={{ marginTop: 20 }}
-              />
-
-              <List
-                style={{ marginTop: 50 }}
-                header={
-                  <div>
-                    <strong>Other Calculators</strong>
-                  </div>
-                }
-                bordered
-                dataSource={CONSTANTS.OTHER_CALCULATORS}
-                renderItem={item => <List.Item>{item}</List.Item>}
+            {/* Sidebar */}
+            <Col sm={24} md={9}>
+              <OtherLinks
+                tableColumns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
+                tableData={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
               />
             </Col>
           </Row>
         </div>
-
-        <Modal
-          className={modalClass}
-          visible={visible}
-          title={modalTitle}
-          onOk={this.handleSave}
-          onCancel={this.handleClose}
-          footer={[
-            <Button key="close" type="link" onClick={this.handleClose}>
-              Close
-            </Button>,
-            <Button key="save" type="primary" onClick={this.handleSave}>
-              Save
-            </Button>
-          ]}
-        >
-          {grade}
-        </Modal>
       </div>
     );
   }

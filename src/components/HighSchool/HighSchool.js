@@ -17,6 +17,8 @@ import {
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
+import OtherLinks from '../OtherLinks/OtherLinks';
+import { isMobile } from 'react-device-detect';
 
 const { Option } = Select;
 
@@ -164,8 +166,9 @@ class HighSchool extends Component {
 
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
+        {isMobile && <Divider />}
         <Row gutter={16}>
-          <Col span={6}>
+          <Col sm={24} md={6}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`courseNames[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -178,7 +181,7 @@ class HighSchool extends Component {
               })(<Input placeholder="Course Name" />)}
             </Form.Item>
           </Col>
-          <Col span={5}>
+          <Col sm={24} md={5}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`letterGrades[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -204,7 +207,7 @@ class HighSchool extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={5}>
+          <Col sm={24} md={5}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`credits[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -225,7 +228,7 @@ class HighSchool extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col sm={24} md={6}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`courseTypes[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -246,7 +249,7 @@ class HighSchool extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={2}>
+          <Col sm={24} md={2}>
             <Button
               type="danger"
               onClick={() => this.remove(k)}
@@ -272,7 +275,7 @@ class HighSchool extends Component {
         </p>
         <div className="college-wrapper">
           <Row gutter={32}>
-            <Col span={15}>
+            <Col sm={24} md={15}>
               <Form onSubmit={this.handleSubmit}>
                 {formItems}
                 <Form.Item>
@@ -346,32 +349,14 @@ class HighSchool extends Component {
                 dataSource={CONSTANTS.HIGH_SCHOOL_LETTER_GRADES}
                 pagination={false}
                 size="small"
+                className="highSchoolTable"
               />
             </Col>
-            <Col span={9}>
-              <Table
-                columns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
-                dataSource={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
-                pagination={false}
-              />
-
-              <Alert
-                message="Note that percentage interval and GPA scale may differ a bit between schools."
-                type="warning"
-                showIcon
-                style={{ marginTop: 20 }}
-              />
-
-              <List
-                style={{ marginTop: 50 }}
-                header={
-                  <div>
-                    <strong>Other Calculators</strong>
-                  </div>
-                }
-                bordered
-                dataSource={CONSTANTS.OTHER_CALCULATORS}
-                renderItem={item => <List.Item>{item}</List.Item>}
+            {isMobile && <Divider />}
+            <Col sm={24} md={9}>
+              <OtherLinks
+                tableColumns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
+                tableData={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}
               />
             </Col>
           </Row>

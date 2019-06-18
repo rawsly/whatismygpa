@@ -91,7 +91,7 @@ export const GRADE_DATA = [
   {
     key: '6',
     assessment: <strong>Grade</strong>,
-    pointWeight: '75'
+    pointWeight: <strong>75 (C)</strong>
   }
 ];
 
@@ -191,7 +191,7 @@ export const HIGH_SCHOOL_LETTER_GRADES = [
 
 export const CREDITS = [...Array(20).keys()].map(x => ++x);
 
-export const GRADE_WEIGHTS = [...Array(101).keys()];
+export const GRADE_WEIGHTS = [...Array(100).keys()].map(x => ++x);
 
 export const HIGH_SCHOOL_CREDITS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5];
 
@@ -277,14 +277,7 @@ export const COLLEGE_DATA = [
 export const COLLEGE_EXAMPLE_COLUMNS = [
   {
     title: 'Class Name',
-    dataIndex: 'nameOfClass',
-    render: (text, row, index) => {
-      if (index < 4) {
-        return text;
-      }
-
-      return <strong>{text}</strong>;
-    }
+    dataIndex: 'nameOfClass'
   },
   {
     title: 'Letter',
@@ -292,30 +285,11 @@ export const COLLEGE_EXAMPLE_COLUMNS = [
   },
   {
     title: 'Credits',
-    dataIndex: 'classCredits',
-    render: (text, row, index) => {
-      if (index < 4) {
-        return text;
-      }
-
-      return {
-        children: <strong>{text}</strong>,
-        props: {
-          colSpan: 1
-        }
-      };
-    }
+    dataIndex: 'classCredits'
   },
   {
     title: 'Point',
-    dataIndex: 'cumulativePoint',
-    render: (text, row, index) => {
-      if (index < 4) {
-        return text;
-      }
-
-      return <strong>{text}</strong>;
-    }
+    dataIndex: 'cumulativePoint'
   }
 ];
 
@@ -350,9 +324,14 @@ export const COLLEGE_EXAMPLE_DATA = [
   },
   {
     key: '5',
-    nameOfClass: 'Total',
-    classCredits: '23',
-    cumulativePoint: '73.60'
+    nameOfClass: <strong>(Σ) Total</strong>,
+    classCredits: <strong>23</strong>,
+    cumulativePoint: <strong>73.60</strong>
+  },
+  {
+    key: '6',
+    nameOfClass: <strong>GPA</strong>,
+    cumulativePoint: <strong>3.20</strong>
   }
 ];
 
@@ -475,3 +454,17 @@ export const COURSE_TYPES = [
   'College Prep',
   'Honors Course'
 ];
+
+export const COLORS = {
+  success: '#92C947',
+  good: '#F4CD0B',
+  nice: '#F9B461',
+  notGood: '#F26638'
+};
+
+export const MESSAGES = {
+  success: 'Perfect grades! You are amazing!',
+  good: 'Good job! Keep up good work.',
+  nice: 'Nice grades. Work harder!',
+  notGood: "Don't worry. You can do better!"
+};

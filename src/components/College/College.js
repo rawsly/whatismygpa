@@ -10,11 +10,15 @@ import {
   Col,
   Modal,
   Table,
-  List
+  List,
+  Avatar,
+  Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
+import OtherLinks from '../OtherLinks/OtherLinks';
+import { isMobile } from 'react-device-detect';
 
 const { Option } = Select;
 
@@ -27,8 +31,8 @@ class College extends Component {
       classes: [],
       gpa: 0,
       visible: null,
-      modalClass: '',
-      modalTitle: ''
+      modalColor: '',
+      modalMessage: ''
     };
   }
 
@@ -84,6 +88,7 @@ class College extends Component {
       if (!err) {
         const { courseNames, credits, letterGrades, keys } = values;
         const gpa = this.calculateGPA(credits, letterGrades);
+        this.setMessageAndColor(gpa);
         this.setState({ gpa }, this.showGPAModal(gpa));
       } else {
         console.log(err);
@@ -115,36 +120,52 @@ class College extends Component {
     console.log('Saved!');
   };
 
-  showGPAModal = gpa => {
-    this.setState({ visible: true });
-
+  setMessageAndColor = gpa => {
     if (gpa < 2) {
       this.setState({
-        modalClass: CONSTANTS.NOT_GOOD,
-        modalTitle: 'You can do better!'
+        modalColor: CONSTANTS.COLORS.notGood,
+        modalMessage: CONSTANTS.MESSAGES.notGood
       });
     } else if (gpa >= 2 && gpa < 3) {
-      this.setState({ modalClass: CONSTANTS.NICE, modalTitle: 'Nice!' });
+      this.setState({
+        modalColor: CONSTANTS.COLORS.nice,
+        modalMessage: CONSTANTS.MESSAGES.nice
+      });
     } else if (gpa >= 3 && gpa < 3.5) {
       this.setState({
-        modalClass: CONSTANTS.GOOD,
-        modalTitle: 'Keep doing this!'
+        modalColor: CONSTANTS.COLORS.good,
+        modalMessage: CONSTANTS.MESSAGES.good
       });
     } else {
-      this.setState({ modalClass: CONSTANTS.SUCCESS, modalTitle: 'Amazing!' });
+      this.setState({
+        modalColor: CONSTANTS.COLORS.success,
+        modalMessage: CONSTANTS.MESSAGES.success
+      });
     }
   };
 
+  showGPAModal = gpa => {
+    this.setState({ visible: true });
+  };
+
   render() {
-    const { gpa, visible, classes, modalClass, modalTitle } = this.state;
+    const {
+      gpa,
+      visible,
+      classes,
+      modalClass,
+      modalMessage,
+      modalColor
+    } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
 
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
+        {isMobile && <Divider />}
         <Row gutter={16}>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`courseNames[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -157,7 +178,7 @@ class College extends Component {
               })(<Input placeholder="Course Name" />)}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`letterGrades[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -171,14 +192,14 @@ class College extends Component {
                 <Select placeholder="Letter Grade">
                   {CONSTANTS.LETTER_GRADES.map((letterGrade, index) => (
                     <Option key={letterGrade.letter} value={letterGrade.grade}>
-                      {`${letterGrade.letter} (${letterGrade.grade})`}
+                      {`${letterGrade.letter}`}
                     </Option>
                   ))}
                 </Select>
               )}
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col sm={24} md={6}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`credits[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -199,7 +220,7 @@ class College extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={2}>
+          <Col sm={24} md={2}>
             <Button
               type="danger"
               onClick={() => this.remove(k)}
@@ -225,7 +246,7 @@ class College extends Component {
         </p>
         <div className="college-wrapper">
           <Row gutter={32}>
-            <Col span={15}>
+            <Col sm={24} md={15}>
               <Form onSubmit={this.handleSubmit}>
                 {formItems}
                 <Form.Item>
@@ -249,29 +270,25 @@ class College extends Component {
               </Form>
 
               <Title>How does it work?</Title>
-              <p>
-                <ul>
-                  <li>
-                    Click on <strong>"Add New Class"</strong> button to add a
-                    new class.
-                  </li>
-                  <li>
-                    Write your class name. This is{' '}
-                    <strong>not required.</strong>
-                  </li>
-                  <li>
-                    Select your letter grade. This is <strong>required.</strong>
-                  </li>
-                  <li>
-                    Select your class credits. This is also{' '}
-                    <strong>required.</strong>
-                  </li>
-                  <li>
-                    If you are done, click on <strong>"Calculate"</strong>{' '}
-                    button.
-                  </li>
-                </ul>
-              </p>
+              <ul>
+                <li>
+                  Click on <strong>"Add New Class"</strong> button to add a new
+                  class.
+                </li>
+                <li>
+                  Write your class name. This is <strong>not required.</strong>
+                </li>
+                <li>
+                  Select your letter grade. This is <strong>required.</strong>
+                </li>
+                <li>
+                  Select your class credits. This is also{' '}
+                  <strong>required.</strong>
+                </li>
+                <li>
+                  If you are done, click on <strong>"Calculate"</strong> button.
+                </li>
+              </ul>
               <Title>What is the formula?</Title>
               <p>The formula is actually pretty straight forward.</p>
               <p>
@@ -303,22 +320,10 @@ class College extends Component {
                 is <strong>3.20</strong>.
               </p>
             </Col>
-            <Col span={9}>
-              <Table
-                columns={CONSTANTS.COLLEGE_COLUMNS}
-                dataSource={CONSTANTS.COLLEGE_DATA}
-                pagination={false}
-              />
-              <List
-                style={{ marginTop: 50 }}
-                header={
-                  <div>
-                    <strong>Other Calculators</strong>
-                  </div>
-                }
-                bordered
-                dataSource={CONSTANTS.OTHER_CALCULATORS}
-                renderItem={item => <List.Item>{item}</List.Item>}
+            <Col sm={24} md={9}>
+              <OtherLinks
+                tableColumns={CONSTANTS.COLLEGE_COLUMNS}
+                tableData={CONSTANTS.COLLEGE_DATA}
               />
             </Col>
           </Row>
@@ -327,7 +332,6 @@ class College extends Component {
         <Modal
           className={modalClass}
           visible={visible}
-          title={modalTitle}
           onOk={this.handleSave}
           onCancel={this.handleClose}
           footer={[
@@ -339,7 +343,18 @@ class College extends Component {
             </Button>
           ]}
         >
-          {gpa}
+          <p className="modalText" style={{ color: modalColor }}>
+            <strong>{modalMessage}</strong> <Icon type="smile" />
+          </p>
+          <p>
+            <Avatar
+              size="large"
+              className="modalGpa"
+              style={{ backgroundColor: modalColor }}
+            >
+              {gpa}
+            </Avatar>
+          </p>
         </Modal>
       </div>
     );
