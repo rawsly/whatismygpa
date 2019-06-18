@@ -11,11 +11,13 @@ import {
   Table,
   List,
   Alert,
-  message
+  message,
+  Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import * as CONSTANTS from '../../constants';
 import OtherLinks from '../OtherLinks/OtherLinks';
+import { isMobile } from 'react-device-detect';
 
 const { Option } = Select;
 
@@ -232,8 +234,9 @@ class Grade extends Component {
 
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
+        {isMobile && <Divider />}
         <Row gutter={16}>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`assessments[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -251,7 +254,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={7}>
+          <Col sm={24} md={7}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`points[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -275,7 +278,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={7}>
+          <Col sm={24} md={7}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`weights[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -299,7 +302,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={2}>
+          <Col sm={24} md={2}>
             <Button
               type="danger"
               onClick={() => this.remove(k)}
@@ -316,7 +319,7 @@ class Grade extends Component {
     const finalFormItems = (
       <div className="form-wrapper">
         <Row gutter={16}>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={true}>
               {getFieldDecorator(`currentGrade`, {
                 initialValue: grade && Math.round(grade),
@@ -341,7 +344,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={true}>
               {getFieldDecorator(`finalWeight`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -365,7 +368,7 @@ class Grade extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={true}>
               {getFieldDecorator(`desiredGrade`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -405,7 +408,7 @@ class Grade extends Component {
         </p>
         <div className="college-wrapper">
           <Row gutter={32}>
-            <Col span={15}>
+            <Col sm={24} md={15}>
               <Form>
                 {formItems}
                 <Form.Item>
@@ -502,7 +505,7 @@ class Grade extends Component {
             </Col>
 
             {/* Sidebar */}
-            <Col span={9}>
+            <Col sm={24} md={9}>
               <OtherLinks
                 tableColumns={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_COLUMNS}
                 tableData={CONSTANTS.HIGH_SCHOOL_GPA_SCALE_DATA}

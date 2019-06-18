@@ -11,12 +11,14 @@ import {
   Modal,
   Table,
   List,
-  Avatar
+  Avatar,
+  Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
 import OtherLinks from '../OtherLinks/OtherLinks';
+import { isMobile } from 'react-device-detect';
 
 const { Option } = Select;
 
@@ -161,8 +163,9 @@ class College extends Component {
 
     const formItems = keys.map((k, index) => (
       <div className="form-wrapper" key={k}>
+        {isMobile && <Divider />}
         <Row gutter={16}>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={false} key={k}>
               {getFieldDecorator(`courseNames[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -175,7 +178,7 @@ class College extends Component {
               })(<Input placeholder="Course Name" />)}
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col sm={24} md={8}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`letterGrades[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -196,7 +199,7 @@ class College extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col sm={24} md={6}>
             <Form.Item required={true} key={k}>
               {getFieldDecorator(`credits[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
@@ -217,7 +220,7 @@ class College extends Component {
               )}
             </Form.Item>
           </Col>
-          <Col span={2}>
+          <Col sm={24} md={2}>
             <Button
               type="danger"
               onClick={() => this.remove(k)}
@@ -243,7 +246,7 @@ class College extends Component {
         </p>
         <div className="college-wrapper">
           <Row gutter={32}>
-            <Col span={15}>
+            <Col sm={24} md={15}>
               <Form onSubmit={this.handleSubmit}>
                 {formItems}
                 <Form.Item>
@@ -267,29 +270,25 @@ class College extends Component {
               </Form>
 
               <Title>How does it work?</Title>
-              <p>
-                <ul>
-                  <li>
-                    Click on <strong>"Add New Class"</strong> button to add a
-                    new class.
-                  </li>
-                  <li>
-                    Write your class name. This is{' '}
-                    <strong>not required.</strong>
-                  </li>
-                  <li>
-                    Select your letter grade. This is <strong>required.</strong>
-                  </li>
-                  <li>
-                    Select your class credits. This is also{' '}
-                    <strong>required.</strong>
-                  </li>
-                  <li>
-                    If you are done, click on <strong>"Calculate"</strong>{' '}
-                    button.
-                  </li>
-                </ul>
-              </p>
+              <ul>
+                <li>
+                  Click on <strong>"Add New Class"</strong> button to add a new
+                  class.
+                </li>
+                <li>
+                  Write your class name. This is <strong>not required.</strong>
+                </li>
+                <li>
+                  Select your letter grade. This is <strong>required.</strong>
+                </li>
+                <li>
+                  Select your class credits. This is also{' '}
+                  <strong>required.</strong>
+                </li>
+                <li>
+                  If you are done, click on <strong>"Calculate"</strong> button.
+                </li>
+              </ul>
               <Title>What is the formula?</Title>
               <p>The formula is actually pretty straight forward.</p>
               <p>
@@ -321,7 +320,7 @@ class College extends Component {
                 is <strong>3.20</strong>.
               </p>
             </Col>
-            <Col span={9}>
+            <Col sm={24} md={9}>
               <OtherLinks
                 tableColumns={CONSTANTS.COLLEGE_COLUMNS}
                 tableData={CONSTANTS.COLLEGE_DATA}

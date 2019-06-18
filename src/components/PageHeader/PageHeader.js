@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 import { Menu, Layout } from 'antd';
 import './PageHeader.css';
 import * as ROUTES from '../../routes';
+import PageMenu from '../PageMenu/PageMenu';
+import { isMobile } from 'react-device-detect';
 
 const { Header } = Layout;
-
 class PageHeader extends Component {
   constructor(props) {
     super(props);
@@ -17,24 +18,7 @@ class PageHeader extends Component {
         <div className="logo">
           <a href={ROUTES.HOME}>whatIsMyGPA</a>
         </div>
-        <Menu
-          theme="dark"
-          mode="horizontal"
-          style={{ lineHeight: '64px' }}
-          className="top-menu"
-        >
-          <Menu.Item key="1">
-            <a href={ROUTES.COLLEGE_GPA_CALCULATOR}>College GPA Calculator</a>
-          </Menu.Item>
-          <Menu.Item key="2">
-            <a href={ROUTES.HIGH_SCHOOL_GPA_CALCULATOR}>
-              High School GPA Calculator
-            </a>
-          </Menu.Item>
-          <Menu.Item key="3">
-            <a href={ROUTES.GRADE_CALCULATOR}>Grade Calculator</a>
-          </Menu.Item>
-        </Menu>
+        {isMobile ? console.log('Implement this later!') : <PageMenu />}
       </Header>
     );
   }
