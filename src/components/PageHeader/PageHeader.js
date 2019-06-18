@@ -20,7 +20,6 @@ class PageHeader extends Component {
         <Menu
           theme="dark"
           mode="horizontal"
-          defaultSelectedKeys={['1']}
           style={{ lineHeight: '64px' }}
           className="top-menu"
         >
