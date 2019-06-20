@@ -215,9 +215,17 @@ class Grade extends Component {
   };
 
   renderMinimumGradeForFinal = minimumGradeForFinal => {
+    let iconType;
+    if (minimumGradeForFinal < 33) {
+      iconType = 'smile';
+    } else if (minimumGradeForFinal >= 33 && minimumGradeForFinal < 66) {
+      iconType = 'meh';
+    } else {
+      iconType = 'frown';
+    }
     return (
       <span className="gradeMessage">
-        <Icon type="highlight" /> Grade needed in final:{' '}
+        <Icon type={iconType} /> Grade needed in final:{' '}
         <strong>{minimumGradeForFinal}</strong>
       </span>
     );
@@ -226,20 +234,28 @@ class Grade extends Component {
   setMessageAndType = grade => {
     let message = null;
     let type = null;
+    let iconType;
+    let rotate = 0;
 
     if (grade < 60) {
       type = 'error';
+      iconType = 'frown';
     } else if (grade >= 60 && grade < 74) {
       type = 'warning';
+      iconType = 'meh';
     } else if (grade >= 74 && grade < 87) {
       type = 'info';
+      iconType = 'smile';
+      rotate = 180;
     } else {
       type = 'success';
+      iconType = 'smile';
     }
 
     message = (
       <span className="gradeMessage">
-        <Icon type="highlight" /> Your grade: <strong>{grade}</strong>
+        <Icon type={iconType} rotate={rotate} /> Your grade:{' '}
+        <strong>{grade}</strong>
       </span>
     );
 

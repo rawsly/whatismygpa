@@ -137,22 +137,31 @@ class HighSchool extends Component {
     const weighted = gpas[1];
     let message = null;
     let type = null;
+    let iconType;
+    let rotate = 0;
 
     if (unweighted < 1) {
       type = 'error';
+      iconType = 'frown';
     } else if (unweighted >= 1 && unweighted < 2.3) {
       type = 'warning';
+      iconType = 'meh';
     } else if (unweighted >= 2.3 && unweighted < 3.3) {
       type = 'info';
+      iconType = 'smile';
+      rotate = 180;
     } else {
       type = 'success';
+      iconType = 'smile';
     }
 
     message = (
       <span className="gpaMessage">
-        <Icon type="highlight" /> Unweighted GPA: <strong>{unweighted}</strong>
+        <Icon type={iconType} rotate={rotate} /> Unweighted GPA:{' '}
+        <strong>{unweighted}</strong>
         <Divider />
-        <Icon type="highlight" /> Weighted GPA: <strong>{weighted}</strong>
+        <Icon type={iconType} rotate={rotate} /> Weighted GPA:{' '}
+        <strong>{weighted}</strong>
       </span>
     );
 

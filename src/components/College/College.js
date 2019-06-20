@@ -126,20 +126,27 @@ class College extends Component {
   setMessageAndType = gpa => {
     let message = null;
     let type = null;
+    let iconType;
+    let rotate = 0;
 
     if (gpa < 1) {
       type = 'error';
+      iconType = 'frown';
     } else if (gpa >= 1 && gpa < 2.3) {
       type = 'warning';
+      iconType = 'meh';
     } else if (gpa >= 2.3 && gpa < 3.3) {
       type = 'info';
+      iconType = 'smile';
+      rotate = 180;
     } else {
       type = 'success';
+      iconType = 'smile';
     }
 
     message = (
       <span className="gpaMessage">
-        <Icon type="highlight" /> GPA: <strong>{gpa}</strong>
+        <Icon type={iconType} rotate={rotate} /> GPA: <strong>{gpa}</strong>
       </span>
     );
 
