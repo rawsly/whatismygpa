@@ -30,7 +30,9 @@ class Grade extends Component {
       courses: [],
       grade: null,
       finalAssessment: {},
-      minimumGradeForFinal: null
+      minimumGradeForFinal: null,
+      message: null,
+      type: null
     };
   }
 
@@ -93,7 +95,7 @@ class Grade extends Component {
             : course
         )
       }),
-      () => this.calculateGPA()
+      () => this.calculateGrade()
     );
   };
 
@@ -106,7 +108,7 @@ class Grade extends Component {
             : course
         )
       }),
-      () => this.calculateGPA()
+      () => this.calculateGrade()
     );
   };
 
@@ -137,7 +139,7 @@ class Grade extends Component {
     }
   };
 
-  calculateGPA = () => {
+  calculateGrade = () => {
     const { courses } = this.state;
 
     let grade = 0;
@@ -156,10 +158,15 @@ class Grade extends Component {
       grade /= cumulativeWeight;
     }
 
-    this.setState(prevState => ({
-      finalAssessment: { ...prevState.finalAssessment, currentGrade: grade },
-      grade: grade.toFixed(CONSTANTS.DECIMAL_LENGTH)
-    }));
+    grade = grade.toFixed(CONSTANTS.DECIMAL_LENGTH);
+
+    this.setState(
+      prevState => ({
+        finalAssessment: { ...prevState.finalAssessment, currentGrade: grade },
+        grade
+      }),
+      () => this.renderGradeMessage(grade)
+    );
 
     return grade;
   };
@@ -185,13 +192,15 @@ class Grade extends Component {
       let weightWithoutFinal = totalWeight - finalWeight;
       let gradeWithWeight = currentGrade * (weightWithoutFinal / totalWeight);
       let desiredWeight = desiredGrade - gradeWithWeight;
-      let minimumGrade = (desiredWeight / finalWeight) * totalWeight;
+      let minimumGradeForFinal = (desiredWeight / finalWeight) * totalWeight;
 
-      this.setState({
-        minimumGradeForFinal: minimumGrade.toFixed(CONSTANTS.DECIMAL_LENGTH)
-      });
+      minimumGradeForFinal = minimumGradeForFinal.toFixed(
+        CONSTANTS.DECIMAL_LENGTH
+      );
 
-      return minimumGrade;
+      this.setState({ minimumGradeForFinal });
+
+      return minimumGradeForFinal;
     }
 
     return 0;
@@ -223,11 +232,17 @@ class Grade extends Component {
         <Icon type="highlight" /> Your grade: <strong>{grade}</strong>
       </span>
     );
+
+    const { message, type } = gradeMessage;
+    console.log(message, type);
+
+    this.setState({ message, type });
+
     return gradeMessage;
   };
 
   render() {
-    const { grade, minimumGradeForFinal } = this.state;
+    const { grade, minimumGradeForFinal, message, type } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -416,16 +431,12 @@ class Grade extends Component {
                     type="dashed"
                     onClick={this.add}
                     style={{ width: '100%' }}
+                    size="large"
                   >
                     <Icon type="plus" /> Add New Assessment
                   </Button>
                 </Form.Item>
-                {grade && (
-                  <Alert
-                    message={this.renderGradeMessage(grade).message}
-                    type={this.renderGradeMessage(grade).type}
-                  />
-                )}
+                {grade && <Alert message={message} type={type} />}
               </Form>
 
               {grade && (
