@@ -45,9 +45,12 @@ class HighSchool extends Component {
       keys: keys.filter(key => key !== k)
     });
 
-    this.setState(prevState => ({
-      courses: courses.filter(course => course.id !== k)
-    }));
+    this.setState(
+      prevState => ({
+        courses: courses.filter(course => course.id !== k)
+      }),
+      () => this.calculateGPA()
+    );
   };
 
   add = () => {
@@ -98,7 +101,7 @@ class HighSchool extends Component {
     let unweightedGPA = 0;
     let cumulativeCredits = 0;
 
-    courses.map(course => {
+    courses.forEach(course => {
       const { courseCredit, courseLetter, courseType } = course;
       if (courseCredit != null && courseLetter != null && courseType != null) {
         unweightedGPA += courseCredit * courseLetter;
@@ -113,48 +116,56 @@ class HighSchool extends Component {
           weightedGPA += courseCredit * (courseLetter + 1);
         }
       }
-
-      return weightedGPA;
     });
 
-    let unweighted = unweightedGPA / cumulativeCredits;
-    let weighted = weightedGPA / cumulativeCredits;
-    let gpas = [
-      unweighted.toFixed(CONSTANTS.DECIMAL_LENGTH),
-      weighted.toFixed(CONSTANTS.DECIMAL_LENGTH)
-    ];
-
-    if (!isNaN(gpas[0]) && !isNaN(gpas[1])) {
-      const messageAndType = this.renderMessageAndType(gpas);
-      const { message, type } = messageAndType;
-      this.setState({ gpas, message, type }, console.log(gpas));
+    if (cumulativeCredits > 0) {
+      let gpas = [];
+      let unweighted = unweightedGPA / cumulativeCredits;
+      let weighted = weightedGPA / cumulativeCredits;
+      gpas = [
+        unweighted.toFixed(CONSTANTS.DECIMAL_LENGTH),
+        weighted.toFixed(CONSTANTS.DECIMAL_LENGTH)
+      ];
+      this.setState({ gpas }, () => this.setMessageAndType(gpas));
+    } else {
+      this.setState({ gpas: null });
     }
-
-    return gpas;
   };
 
-  renderMessageAndType = gpas => {
+  setMessageAndType = gpas => {
     const unweighted = gpas[0];
     const weighted = gpas[1];
-    let gpaMessage = { message: null, type: null };
+    let message = null;
+    let type = null;
+    let iconType;
+    let rotate = 0;
+
     if (unweighted < 1) {
-      gpaMessage.type = 'error';
+      type = 'error';
+      iconType = 'frown';
     } else if (unweighted >= 1 && unweighted < 2.3) {
-      gpaMessage.type = 'warning';
+      type = 'warning';
+      iconType = 'meh';
     } else if (unweighted >= 2.3 && unweighted < 3.3) {
-      gpaMessage.type = 'info';
+      type = 'info';
+      iconType = 'smile';
+      rotate = 180;
     } else {
-      gpaMessage.type = 'success';
+      type = 'success';
+      iconType = 'smile';
     }
 
-    gpaMessage.message = (
+    message = (
       <span className="gpaMessage">
-        <Icon type="highlight" /> Unweighted GPA: <strong>{unweighted}</strong>
+        <Icon type={iconType} rotate={rotate} /> Unweighted GPA:{' '}
+        <strong>{unweighted}</strong>
         <Divider />
-        <Icon type="highlight" /> Weighted GPA: <strong>{weighted}</strong>
+        <Icon type={iconType} rotate={rotate} /> Weighted GPA:{' '}
+        <strong>{weighted}</strong>
       </span>
     );
-    return gpaMessage;
+
+    this.setState({ message, type });
   };
 
   render() {
@@ -301,7 +312,7 @@ class HighSchool extends Component {
                     <Icon type="plus" /> Add New Course
                   </Button>
                 </Form.Item>
-                {gpas.length > 0 && (
+                {gpas && gpas.length > 0 && (
                   <Alert
                     message={message}
                     type={type}

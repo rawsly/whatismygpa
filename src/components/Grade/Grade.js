@@ -9,7 +9,6 @@ import {
   Row,
   Col,
   Table,
-  List,
   Alert,
   message,
   Divider
@@ -46,9 +45,12 @@ class Grade extends Component {
       keys: keys.filter(key => key !== k)
     });
 
-    this.setState(prevState => ({
-      courses: courses.filter(course => course.id !== k)
-    }));
+    this.setState(
+      prevState => ({
+        courses: courses.filter(course => course.id !== k)
+      }),
+      () => this.calculateGrade()
+    );
   };
 
   add = () => {
@@ -142,31 +144,37 @@ class Grade extends Component {
   calculateGrade = () => {
     const { courses } = this.state;
 
+    if (courses.length === 0) {
+      this.setState({ grade: null, minimumGradeForFinal: null });
+      return;
+    }
+
     let grade = 0;
     let cumulativeWeight = 0;
 
-    courses.map(course => {
-      if (course.assessmentPoint !== null && course.assessmentWeight !== null) {
-        grade += course.assessmentPoint * course.assessmentWeight;
-        cumulativeWeight += course.assessmentWeight;
+    courses.forEach(course => {
+      const { assessmentPoint, assessmentWeight } = course;
+      if (assessmentPoint !== null && assessmentWeight !== null) {
+        grade += assessmentPoint * assessmentWeight;
+        cumulativeWeight += assessmentWeight;
       }
-
-      return course;
     });
 
-    if (cumulativeWeight !== 0) {
+    if (cumulativeWeight > 0) {
       grade /= cumulativeWeight;
+      grade = grade.toFixed(CONSTANTS.DECIMAL_LENGTH);
+
+      this.setState(
+        prevState => ({
+          finalAssessment: {
+            ...prevState.finalAssessment,
+            currentGrade: grade
+          },
+          grade
+        }),
+        () => this.setMessageAndType(grade)
+      );
     }
-
-    grade = grade.toFixed(CONSTANTS.DECIMAL_LENGTH);
-
-    this.setState(
-      prevState => ({
-        finalAssessment: { ...prevState.finalAssessment, currentGrade: grade },
-        grade
-      }),
-      () => this.renderGradeMessage(grade)
-    );
 
     return grade;
   };
@@ -207,42 +215,55 @@ class Grade extends Component {
   };
 
   renderMinimumGradeForFinal = minimumGradeForFinal => {
+    let iconType;
+    if (minimumGradeForFinal < 33) {
+      iconType = 'smile';
+    } else if (minimumGradeForFinal >= 33 && minimumGradeForFinal < 66) {
+      iconType = 'meh';
+    } else {
+      iconType = 'frown';
+    }
     return (
       <span className="gradeMessage">
-        <Icon type="highlight" /> Grade needed in final:{' '}
+        <Icon type={iconType} /> Grade needed in final:{' '}
         <strong>{minimumGradeForFinal}</strong>
       </span>
     );
   };
 
-  renderGradeMessage = grade => {
-    let gradeMessage = { message: null, type: null };
+  setMessageAndType = grade => {
+    let message = null;
+    let type = null;
+    let iconType;
+    let rotate = 0;
+
     if (grade < 60) {
-      gradeMessage.type = 'error';
+      type = 'error';
+      iconType = 'frown';
     } else if (grade >= 60 && grade < 74) {
-      gradeMessage.type = 'warning';
+      type = 'warning';
+      iconType = 'meh';
     } else if (grade >= 74 && grade < 87) {
-      gradeMessage.type = 'info';
+      type = 'info';
+      iconType = 'smile';
+      rotate = 180;
     } else {
-      gradeMessage.type = 'success';
+      type = 'success';
+      iconType = 'smile';
     }
 
-    gradeMessage.message = (
+    message = (
       <span className="gradeMessage">
-        <Icon type="highlight" /> Your grade: <strong>{grade}</strong>
+        <Icon type={iconType} rotate={rotate} /> Your grade:{' '}
+        <strong>{grade}</strong>
       </span>
     );
 
-    const { message, type } = gradeMessage;
-    console.log(message, type);
-
     this.setState({ message, type });
-
-    return gradeMessage;
   };
 
   render() {
-    const { grade, minimumGradeForFinal, message, type } = this.state;
+    const { grade, minimumGradeForFinal, message, type, courses } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
