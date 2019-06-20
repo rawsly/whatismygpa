@@ -254,6 +254,7 @@ class College extends Component {
                     type="dashed"
                     onClick={this.add}
                     style={{ width: '100%' }}
+                    size="large"
                   >
                     <Icon type="plus" /> Add New Course
                   </Button>
@@ -285,9 +286,7 @@ class College extends Component {
                   Select your class credits. This is also{' '}
                   <strong>required.</strong>
                 </li>
-                <li>
-                  If you are done, click on <strong>"Calculate"</strong> button.
-                </li>
+                <li>Calculation will be done automatically.</li>
               </ul>
               <Title>What is the formula?</Title>
               <p>The formula is actually pretty straight forward.</p>

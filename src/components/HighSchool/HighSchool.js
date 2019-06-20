@@ -28,16 +28,15 @@ class HighSchool extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      classes: [],
+      courses: [],
       gpas: [],
-      visible: null,
-      modalClass: '',
-      modalTitle: ''
+      message: null,
+      type: null
     };
   }
 
   remove = k => {
-    const { classes } = this.state;
+    const { courses } = this.state;
     const { form } = this.props;
     const keys = form.getFieldValue('keys');
     // We need at least one field to calculate
@@ -46,11 +45,9 @@ class HighSchool extends Component {
       keys: keys.filter(key => key !== k)
     });
 
-    this.setState({
-      classes: classes.filter(currentClass => {
-        return currentClass.id !== k;
-      })
-    });
+    this.setState(prevState => ({
+      courses: courses.filter(course => course.id !== k)
+    }));
   };
 
   add = () => {
@@ -63,63 +60,62 @@ class HighSchool extends Component {
       keys: nextKeys
     });
 
-    const newClass = {
-      id,
-      courseName: '',
-      letter: '',
-      grade: 0,
-      credit: 0,
-      courseType: 'regular'
+    const courseId = id - 1;
+    const newCourse = {
+      id: courseId,
+      courseName: null,
+      courseLetter: null,
+      courseCredit: null,
+      courseType: null
     };
 
     this.setState(prevState => ({
-      classes: [...prevState.classes, newClass]
+      courses: [...prevState.courses, newCourse]
     }));
   };
 
-  handleSubmit = e => {
-    e.preventDefault();
-    const { classes } = this.state;
-    if (classes.length === 0) {
-      return;
+  handleChange = (index, type, event) => {
+    // for input type, event is not value directly unlike select option type
+    if (event && event.target) {
+      event = event.target.value;
     }
-
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        const {
-          courseNames,
-          credits,
-          letterGrades,
-          courseTypes,
-          keys
-        } = values;
-        const gpas = this.calculateGPA(credits, letterGrades, courseTypes);
-        this.setState({ gpas }, this.showGPAModal(gpas));
-      } else {
-        console.log(err);
-      }
-    });
+    this.setState(
+      prevState => ({
+        courses: prevState.courses.map(course =>
+          course.id === index
+            ? Object.assign(course, { [type]: event })
+            : course
+        )
+      }),
+      () => this.calculateGPA()
+    );
   };
 
-  calculateGPA = (credits, letterGrades, courseTypes) => {
+  calculateGPA = () => {
+    const { courses } = this.state;
+
     let weightedGPA = 0;
     let unweightedGPA = 0;
     let cumulativeCredits = 0;
-    for (let i = 0; i < credits.length; i++) {
-      if (!isNaN(credits[i]) && !isNaN(letterGrades[i])) {
-        unweightedGPA += credits[i] * letterGrades[i];
-        cumulativeCredits += credits[i];
-        // regular
-        if (courseTypes[i] === CONSTANTS.COURSE_TYPES[0]) {
-          weightedGPA += credits[i] * letterGrades[i];
+
+    courses.map(course => {
+      const { courseCredit, courseLetter, courseType } = course;
+      if (courseCredit != null && courseLetter != null && courseType != null) {
+        unweightedGPA += courseCredit * courseLetter;
+        cumulativeCredits += courseCredit;
+
+        if (courseType === CONSTANTS.COURSE_TYPES[0]) {
+          weightedGPA += courseCredit * courseLetter;
           // honors
-        } else if (courseTypes[i] === CONSTANTS.COURSE_TYPES[4]) {
-          weightedGPA += credits[i] * (letterGrades[i] + 0.5);
+        } else if (courseType === CONSTANTS.COURSE_TYPES[4]) {
+          weightedGPA += courseCredit * (courseLetter + 0.5);
         } else {
-          weightedGPA += credits[i] * (letterGrades[i] + 1);
+          weightedGPA += courseCredit * (courseLetter + 1);
         }
       }
-    }
+
+      return weightedGPA;
+    });
 
     let unweighted = unweightedGPA / cumulativeCredits;
     let weighted = weightedGPA / cumulativeCredits;
@@ -127,39 +123,42 @@ class HighSchool extends Component {
       unweighted.toFixed(CONSTANTS.DECIMAL_LENGTH),
       weighted.toFixed(CONSTANTS.DECIMAL_LENGTH)
     ];
+
+    if (!isNaN(gpas[0]) && !isNaN(gpas[1])) {
+      const messageAndType = this.renderMessageAndType(gpas);
+      const { message, type } = messageAndType;
+      this.setState({ gpas, message, type }, console.log(gpas));
+    }
+
     return gpas;
   };
 
-  handleClose = () => {
-    this.setState({ visible: false });
-  };
-
-  handleSave = () => {
-    console.log('Saved!');
-  };
-
-  showGPAModal = gpas => {
-    this.setState({ visible: true });
-
-    if (gpas[0] < 2) {
-      this.setState({
-        modalClass: CONSTANTS.NOT_GOOD,
-        modalTitle: 'You can do better!'
-      });
-    } else if (gpas[0] >= 2 && gpas[0] < 3) {
-      this.setState({ modalClass: CONSTANTS.NICE, modalTitle: 'Nice!' });
-    } else if (gpas[0] >= 3 && gpas[0] < 3.5) {
-      this.setState({
-        modalClass: CONSTANTS.GOOD,
-        modalTitle: 'Keep doing this!'
-      });
+  renderMessageAndType = gpas => {
+    const unweighted = gpas[0];
+    const weighted = gpas[1];
+    let gpaMessage = { message: null, type: null };
+    if (unweighted < 1) {
+      gpaMessage.type = 'error';
+    } else if (unweighted >= 1 && unweighted < 2.3) {
+      gpaMessage.type = 'warning';
+    } else if (unweighted >= 2.3 && unweighted < 3.3) {
+      gpaMessage.type = 'info';
     } else {
-      this.setState({ modalClass: CONSTANTS.SUCCESS, modalTitle: 'Amazing!' });
+      gpaMessage.type = 'success';
     }
+
+    gpaMessage.message = (
+      <span className="gpaMessage">
+        <Icon type="highlight" /> Unweighted GPA: <strong>{unweighted}</strong>
+        <Divider />
+        <Icon type="highlight" /> Weighted GPA: <strong>{weighted}</strong>
+      </span>
+    );
+    return gpaMessage;
   };
 
   render() {
-    const { gpas, visible, classes, modalClass, modalTitle, type } = this.state;
+    const { gpas, message, type } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -178,12 +177,17 @@ class HighSchool extends Component {
                     whitespace: true
                   }
                 ]
-              })(<Input placeholder="Course Name" />)}
+              })(
+                <Input
+                  placeholder="Course Name"
+                  onChange={e => this.handleChange(k, 'courseName', e)}
+                />
+              )}
             </Form.Item>
           </Col>
           <Col sm={24} md={5}>
             <Form.Item required={true} key={k}>
-              {getFieldDecorator(`letterGrades[${k}]`, {
+              {getFieldDecorator(`courseLetters[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
                 rules: [
                   {
@@ -192,7 +196,10 @@ class HighSchool extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Letter Grade">
+                <Select
+                  placeholder="Letter Grade"
+                  onChange={e => this.handleChange(k, 'courseLetter', e)}
+                >
                   {CONSTANTS.HIGH_SCHOOL_LETTER_GRADES.map(
                     (letterGrade, index) => (
                       <Option
@@ -209,7 +216,7 @@ class HighSchool extends Component {
           </Col>
           <Col sm={24} md={5}>
             <Form.Item required={true} key={k}>
-              {getFieldDecorator(`credits[${k}]`, {
+              {getFieldDecorator(`courseCredits[${k}]`, {
                 validateTrigger: ['onChange', 'onBlur'],
                 rules: [
                   {
@@ -218,7 +225,10 @@ class HighSchool extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Credits">
+                <Select
+                  placeholder="Credits"
+                  onChange={e => this.handleChange(k, 'courseCredit', e)}
+                >
                   {CONSTANTS.HIGH_SCHOOL_CREDITS.map((credit, index) => (
                     <Option key={credit} value={credit}>
                       {credit}
@@ -239,7 +249,10 @@ class HighSchool extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Course Type">
+                <Select
+                  placeholder="Course Type"
+                  onChange={e => this.handleChange(k, 'courseType', e)}
+                >
                   {CONSTANTS.COURSE_TYPES.map((courseType, index) => (
                     <Option key={courseType} value={courseType}>
                       {courseType}
@@ -276,26 +289,25 @@ class HighSchool extends Component {
         <div className="college-wrapper">
           <Row gutter={32}>
             <Col sm={24} md={15}>
-              <Form onSubmit={this.handleSubmit}>
+              <Form>
                 {formItems}
                 <Form.Item>
                   <Button
                     type="dashed"
                     onClick={this.add}
                     style={{ width: '100%' }}
+                    size="large"
                   >
                     <Icon type="plus" /> Add New Course
                   </Button>
                 </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    disabled={classes.length === 0}
-                  >
-                    Calculate GPA
-                  </Button>
-                </Form.Item>
+                {gpas.length > 0 && (
+                  <Alert
+                    message={message}
+                    type={type}
+                    style={{ marginBottom: 20 }}
+                  />
+                )}
               </Form>
 
               <Title>Weighted vs Unweighted GPA</Title>
@@ -361,24 +373,6 @@ class HighSchool extends Component {
             </Col>
           </Row>
         </div>
-
-        <Modal
-          className={modalClass}
-          visible={visible}
-          title={modalTitle}
-          onOk={this.handleSave}
-          onCancel={this.handleClose}
-          footer={[
-            <Button key="close" type="link" onClick={this.handleClose}>
-              Close
-            </Button>,
-            <Button key="save" type="primary" onClick={this.handleSave}>
-              Save
-            </Button>
-          ]}
-        >
-          {gpas[0]} - {gpas[1]}
-        </Modal>
       </div>
     );
   }
