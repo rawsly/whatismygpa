@@ -12,13 +12,15 @@ import {
   Table,
   List,
   Avatar,
-  Divider
+  Divider,
+  Alert
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
 import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
 import OtherLinks from '../OtherLinks/OtherLinks';
 import { isMobile } from 'react-device-detect';
+import { connectableObservableDescriptor } from 'rxjs/internal/observable/ConnectableObservable';
 
 const { Option } = Select;
 
@@ -28,16 +30,15 @@ class College extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      classes: [],
-      gpa: 0,
-      visible: null,
-      modalColor: '',
-      modalMessage: ''
+      courses: [],
+      gpa: null,
+      message: null,
+      type: null
     };
   }
 
   remove = k => {
-    const { classes } = this.state;
+    const { courses } = this.state;
     const { form } = this.props;
     const keys = form.getFieldValue('keys');
     // We need at least one field to calculate
@@ -46,11 +47,16 @@ class College extends Component {
       keys: keys.filter(key => key !== k)
     });
 
-    this.setState({
-      classes: classes.filter(currentClass => {
-        return currentClass.id !== k;
-      })
-    });
+    if (keys.length === 1) {
+      this.setState({ gpa: null }, console.log(this.state.gpa));
+    }
+
+    this.setState(
+      prevState => ({
+        courses: courses.filter(course => course.id !== k)
+      }),
+      () => this.calculateGPA()
+    );
   };
 
   add = () => {
@@ -63,100 +69,85 @@ class College extends Component {
       keys: nextKeys
     });
 
-    const newClass = {
-      id,
-      courseName: '',
-      letter: '',
-      grade: 0,
-      credit: 0
+    const courseId = id - 1;
+    const newCourse = {
+      id: courseId,
+      courseName: null,
+      courseCredit: null,
+      courseGrade: null
     };
 
     this.setState(prevState => ({
-      classes: [...prevState.classes, newClass]
+      courses: [...prevState.courses, newCourse]
     }));
   };
 
-  handleSubmit = e => {
-    e.preventDefault();
-    const { classes } = this.state;
-
-    if (classes.length === 0) {
-      return;
+  handleChange = (index, type, event) => {
+    // for input type, event is not value directly unlike select option type
+    if (event && event.target) {
+      event = event.target.value;
     }
-
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        const { courseNames, credits, letterGrades, keys } = values;
-        const gpa = this.calculateGPA(credits, letterGrades);
-        this.setMessageAndColor(gpa);
-        this.setState({ gpa }, this.showGPAModal(gpa));
-      } else {
-        console.log(err);
-      }
-    });
+    this.setState(
+      prevState => ({
+        courses: prevState.courses.map(course =>
+          course.id === index
+            ? Object.assign(course, { [type]: event })
+            : course
+        )
+      }),
+      () => this.calculateGPA()
+    );
   };
 
-  calculateGPA = (credits, letterGrades) => {
+  calculateGPA = () => {
+    const { courses } = this.state;
+
     let cumulativeGPA = 0;
     let cumulativeCredits = 0;
-    for (let i = 0; i < credits.length; i++) {
-      if (!isNaN(credits[i]) && !isNaN(letterGrades[i])) {
-        console.log(credits[i], letterGrades[i]);
-        cumulativeGPA += credits[i] * letterGrades[i];
-        cumulativeCredits += credits[i];
+    let gpa = 0;
+
+    courses.forEach(course => {
+      const { courseCredit, courseGrade } = course;
+      if (courseCredit !== null && courseGrade !== null) {
+        cumulativeGPA += courseCredit * courseGrade;
+        cumulativeCredits += courseCredit;
       }
+    });
+
+    if (cumulativeCredits > 0) {
+      gpa = cumulativeGPA / cumulativeCredits;
+      gpa = gpa.toFixed(CONSTANTS.DECIMAL_LENGTH);
+      this.setState({ gpa }, () => this.setMessageAndType(gpa));
     }
 
-    let gpa = cumulativeGPA / cumulativeCredits;
-    console.log('GPA: ', gpa);
-    return gpa.toFixed(CONSTANTS.DECIMAL_LENGTH);
+    return gpa;
   };
 
-  handleClose = () => {
-    this.setState({ visible: false });
-  };
+  setMessageAndType = gpa => {
+    let message = null;
+    let type = null;
 
-  handleSave = () => {
-    console.log('Saved!');
-  };
-
-  setMessageAndColor = gpa => {
-    if (gpa < 2) {
-      this.setState({
-        modalColor: CONSTANTS.COLORS.notGood,
-        modalMessage: CONSTANTS.MESSAGES.notGood
-      });
-    } else if (gpa >= 2 && gpa < 3) {
-      this.setState({
-        modalColor: CONSTANTS.COLORS.nice,
-        modalMessage: CONSTANTS.MESSAGES.nice
-      });
-    } else if (gpa >= 3 && gpa < 3.5) {
-      this.setState({
-        modalColor: CONSTANTS.COLORS.good,
-        modalMessage: CONSTANTS.MESSAGES.good
-      });
+    if (gpa < 1) {
+      type = 'error';
+    } else if (gpa >= 1 && gpa < 2.3) {
+      type = 'warning';
+    } else if (gpa >= 2.3 && gpa < 3.3) {
+      type = 'info';
     } else {
-      this.setState({
-        modalColor: CONSTANTS.COLORS.success,
-        modalMessage: CONSTANTS.MESSAGES.success
-      });
+      type = 'success';
     }
-  };
 
-  showGPAModal = gpa => {
-    this.setState({ visible: true });
+    message = (
+      <span className="gpaMessage">
+        <Icon type="highlight" /> GPA: <strong>{gpa}</strong>
+      </span>
+    );
+
+    this.setState({ message, type });
   };
 
   render() {
-    const {
-      gpa,
-      visible,
-      classes,
-      modalClass,
-      modalMessage,
-      modalColor
-    } = this.state;
+    const { gpa, message, type, courses } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
@@ -175,7 +166,12 @@ class College extends Component {
                     whitespace: true
                   }
                 ]
-              })(<Input placeholder="Course Name" />)}
+              })(
+                <Input
+                  placeholder="Course Name"
+                  onChange={e => this.handleChange(k, 'courseName', e)}
+                />
+              )}
             </Form.Item>
           </Col>
           <Col sm={24} md={8}>
@@ -189,7 +185,10 @@ class College extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Letter Grade">
+                <Select
+                  placeholder="Letter Grade"
+                  onChange={e => this.handleChange(k, 'courseGrade', e)}
+                >
                   {CONSTANTS.LETTER_GRADES.map((letterGrade, index) => (
                     <Option key={letterGrade.letter} value={letterGrade.grade}>
                       {`${letterGrade.letter}`}
@@ -210,7 +209,10 @@ class College extends Component {
                   }
                 ]
               })(
-                <Select placeholder="Credits">
+                <Select
+                  placeholder="Credits"
+                  onChange={e => this.handleChange(k, 'courseCredit', e)}
+                >
                   {CONSTANTS.CREDITS.map((credit, index) => (
                     <Option key={credit} value={credit}>
                       {credit}
@@ -247,7 +249,7 @@ class College extends Component {
         <div className="college-wrapper">
           <Row gutter={32}>
             <Col sm={24} md={15}>
-              <Form onSubmit={this.handleSubmit}>
+              <Form>
                 {formItems}
                 <Form.Item>
                   <Button
@@ -259,16 +261,14 @@ class College extends Component {
                     <Icon type="plus" /> Add New Course
                   </Button>
                 </Form.Item>
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    disabled={classes.length === 0}
-                  >
-                    Calculate
-                  </Button>
-                </Form.Item>
               </Form>
+              {gpa && (
+                <Alert
+                  message={message}
+                  type={type}
+                  style={{ marginBottom: 20 }}
+                />
+              )}
 
               <Title>How does it work?</Title>
               <ul>
@@ -327,34 +327,6 @@ class College extends Component {
             </Col>
           </Row>
         </div>
-
-        <Modal
-          className={modalClass}
-          visible={visible}
-          onOk={this.handleSave}
-          onCancel={this.handleClose}
-          footer={[
-            <Button key="close" type="link" onClick={this.handleClose}>
-              Close
-            </Button>,
-            <Button key="save" type="primary" onClick={this.handleSave}>
-              Save
-            </Button>
-          ]}
-        >
-          <p className="modalText" style={{ color: modalColor }}>
-            <strong>{modalMessage}</strong> <Icon type="smile" />
-          </p>
-          <p>
-            <Avatar
-              size="large"
-              className="modalGpa"
-              style={{ backgroundColor: modalColor }}
-            >
-              {gpa}
-            </Avatar>
-          </p>
-        </Modal>
       </div>
     );
   }
