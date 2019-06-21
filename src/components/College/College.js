@@ -8,19 +8,14 @@ import {
   Select,
   Row,
   Col,
-  Modal,
   Table,
-  List,
-  Avatar,
   Divider,
   Alert
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
-import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
 import OtherLinks from '../OtherLinks/OtherLinks';
 import { isMobile } from 'react-device-detect';
-import { connectableObservableDescriptor } from 'rxjs/internal/observable/ConnectableObservable';
 
 const { Option } = Select;
 
@@ -154,7 +149,7 @@ class College extends Component {
   };
 
   render() {
-    const { gpa, message, type, courses } = this.state;
+    const { gpa, message, type } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');

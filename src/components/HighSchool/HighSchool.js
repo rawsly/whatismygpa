@@ -8,14 +8,11 @@ import {
   Select,
   Row,
   Col,
-  Modal,
   Table,
-  List,
   Alert,
   Divider
 } from 'antd';
 import Title from 'antd/lib/typography/Title';
-import _ from 'lodash';
 import * as CONSTANTS from '../../constants';
 import OtherLinks from '../OtherLinks/OtherLinks';
 import { isMobile } from 'react-device-detect';

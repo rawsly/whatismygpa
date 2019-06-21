@@ -263,7 +263,7 @@ class Grade extends Component {
   };
 
   render() {
-    const { grade, minimumGradeForFinal, message, type, courses } = this.state;
+    const { grade, minimumGradeForFinal, message, type } = this.state;
     const { getFieldDecorator, getFieldValue } = this.props.form;
     getFieldDecorator('keys', { initialValue: [] });
     const keys = getFieldValue('keys');
